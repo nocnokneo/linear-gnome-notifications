@@ -1,6 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Soup from 'gi://Soup';
+import { Logger } from './logger.js';
 
 export class LinearAPIClient {
     constructor(extension) {
@@ -8,8 +9,9 @@ export class LinearAPIClient {
         this.settings = extension.getSettings();
         this.httpSession = new Soup.Session();
         this.apiUrl = 'https://api.linear.app/graphql';
+        this.logger = new Logger('LinearAPI');
 
-        console.log('LinearAPIClient initialized');
+        this.logger.debug('Initialized');
     }
 
     isAuthenticated() {
@@ -31,7 +33,7 @@ export class LinearAPIClient {
             const expires = new Date(expiresAt).getTime();
 
             if (now >= expires) {
-                console.log('OAuth token expired');
+                this.logger.debug('OAuth token expired');
                 return false;
             }
 
@@ -88,7 +90,7 @@ export class LinearAPIClient {
         const bodyBytes = new TextEncoder().encode(bodyText);
         message.set_request_body_from_bytes('application/json', new GLib.Bytes(bodyBytes));
 
-        console.log(`Making Linear API request: ${query.substring(0, 50)}...`);
+        this.logger.debug(`Making API request: ${query.substring(0, 50)}...`);
 
         return new Promise((resolve, reject) => {
             this.httpSession.send_and_read_async(
@@ -100,7 +102,7 @@ export class LinearAPIClient {
                         const bytes = session.send_and_read_finish(result);
                         const responseText = new TextDecoder().decode(bytes.get_data() || new Uint8Array());
 
-                        console.log(`Linear API response status: ${message.get_status()}`);
+                        this.logger.debug(`API response status: ${message.get_status()}`);
 
                         if (message.get_status() !== Soup.Status.OK) {
                             reject(new Error(`HTTP ${message.get_status()}: ${responseText}`));
@@ -254,10 +256,10 @@ export class LinearAPIClient {
     async testConnection() {
         try {
             const user = await this.getCurrentUser();
-            console.log(`Linear API connection successful - logged in as: ${user.name} (${user.email})`);
+            this.logger.info(`Connection successful - logged in as: ${user.name} (${user.email})`);
             return true;
         } catch (error) {
-            console.error('Linear API connection failed:', error.message);
+            this.logger.error('Connection failed:', error.message);
             return false;
         }
     }
@@ -385,11 +387,11 @@ export class LinearAPIClient {
             // Sort by most recent first
             updates.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
-            console.log(`Retrieved ${updates.length} new Linear notifications`);
+            this.logger.debug(`Retrieved ${updates.length} new notifications`);
             return updates;
 
         } catch (error) {
-            console.error('Failed to get Linear notifications:', error.message);
+            this.logger.error('Failed to get notifications:', error.message);
             throw error;
         }
     }

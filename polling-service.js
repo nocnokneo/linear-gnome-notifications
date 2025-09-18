@@ -2,6 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 import { LinearAPIClient } from './linear-client.js';
+import { Logger } from './logger.js';
 
 export class LinearPollingService {
     constructor(extension, notificationManager) {
@@ -12,37 +13,37 @@ export class LinearPollingService {
         this.isPolling = false;
         this.timeoutId = null;
         this.lastKnownUpdates = new Set();
+        this.logger = new Logger('PollingService');
 
-        console.log('LinearPollingService initialized');
+        this.logger.debug('Initialized');
 
         this.settings.connect('changed::polling-interval', () => {
-            console.log('Polling interval changed, restarting service');
+            this.logger.debug('Polling interval changed, restarting service');
             this.restart();
         });
 
         this.settings.connect('changed::oauth-token', () => {
-            console.log('OAuth token changed, restarting service');
+            this.logger.debug('OAuth token changed, restarting service');
             this.restart();
         });
     }
 
     start() {
         if (this.isPolling) {
-            console.log('Polling already active');
+            this.logger.debug('Already polling');
             return;
         }
 
         // Check authentication status
         const isAuth = this.linearClient.isAuthenticated();
-        console.log('Starting Linear polling service... Authentication status:', isAuth);
 
         if (!isAuth) {
-            console.log('❌ Cannot start polling - not authenticated');
+            this.logger.warn('Cannot start polling - not authenticated');
             return;
         }
 
         this.isPolling = true;
-        console.log('✅ Starting polling with authenticated client');
+        this.logger.info('Started polling service');
 
         // Do initial poll immediately
         this.poll();
@@ -52,7 +53,7 @@ export class LinearPollingService {
     }
 
     stop() {
-        console.log('Stopping Linear polling service...');
+        this.logger.info('Stopping polling service');
         this.isPolling = false;
 
         if (this.timeoutId) {
@@ -72,7 +73,7 @@ export class LinearPollingService {
         }
 
         const intervalSeconds = Math.max(30, this.settings.get_int('polling-interval'));
-        console.log(`Scheduling next Linear poll in ${intervalSeconds} seconds`);
+        this.logger.debug(`Next poll in ${intervalSeconds} seconds`);
 
         this.timeoutId = GLib.timeout_add_seconds(
             GLib.PRIORITY_DEFAULT,
@@ -91,25 +92,21 @@ export class LinearPollingService {
         }
 
         if (!this.linearClient.isAuthenticated()) {
-            console.log('Linear client not authenticated, skipping poll');
+            this.logger.debug('Not authenticated, skipping poll');
             return;
         }
 
         try {
-            console.log('🔄 Polling Linear for updates...');
-            const authMethod = this.linearClient.settings.get_string('auth-method');
-            console.log('Using authentication method:', authMethod);
+            this.logger.debug('Polling for updates');
             const updates = await this.linearClient.getUpdates();
-            console.log(`📥 Received ${updates.length} total updates from Linear API`);
+            this.logger.debug(`Received ${updates.length} total updates`);
 
             // Filter out updates we've already seen
             const newUpdates = updates.filter(update => !this.lastKnownUpdates.has(update.id));
 
             if (newUpdates.length > 0) {
-                console.log(`🆕 Found ${newUpdates.length} new Linear updates:`);
-                newUpdates.forEach(update => {
-                    console.log(`  - ${update.type}: ${update.title}`);
-                });
+                this.logger.info(`Found ${newUpdates.length} new updates`);
+                this.logger.debug('New updates:', newUpdates.map(u => `${u.type}: ${u.title}`));
 
                 for (const update of newUpdates) {
                     const notification = this.convertUpdateToNotification(update);
@@ -122,14 +119,14 @@ export class LinearPollingService {
                 // Clean up old update IDs to prevent memory leak
                 this.cleanupOldUpdateIds();
             } else {
-                console.log('No new Linear updates found');
+                this.logger.debug('No new updates found');
             }
 
         } catch (error) {
-            console.error('Failed to poll Linear updates:', error);
+            this.logger.error('Failed to poll updates:', error.message);
 
             if (this.isAuthenticationError(error)) {
-                console.log('Authentication error detected, stopping polling');
+                this.logger.warn('Authentication error detected, stopping polling');
                 this.stop();
             }
         }

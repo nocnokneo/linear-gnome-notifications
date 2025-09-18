@@ -98,23 +98,9 @@ Once configured, the extension will:
 - Open in terminal browser: `links {{URL}}`
 - Copy URL to clipboard: `echo {{URL}} | xclip -selection clipboard`
 
-## Development
+## Contributing
 
-### Building
-
-```bash
-# Install dependencies
-npm install
-
-# Build JavaScript from TypeScript
-npm run build
-
-# Compile GSettings schema
-make build
-
-# Install for testing
-make install
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, debugging, and contribution guidelines.
 
 ## License
 
