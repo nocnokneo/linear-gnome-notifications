@@ -1,0 +1,23 @@
+{
+  "name": "linear-gnome-notifications",
+  "version": "1.0.0",
+  "description": "GNOME Shell extension for Linear desktop notifications",
+  "main": "extension.js",
+  "scripts": {
+    "build": "tsc && cp -r src/*.js . && cp -r schemas .",
+    "watch": "tsc --watch",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf build && rm -f *.js"
+  },
+  "devDependencies": {
+    "@girs/gjs": "^3.0.0",
+    "@girs/gnome-shell": "^46.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.44.0",
+    "typescript": "^5.1.0"
+  },
+  "dependencies": {
+    "@linear/sdk": "^21.0.0"
+  }
+}

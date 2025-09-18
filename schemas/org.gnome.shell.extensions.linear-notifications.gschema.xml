@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.linear-notifications" path="/org/gnome/shell/extensions/linear-notifications/">
+
+    <!-- Authentication Settings -->
+    <key name="auth-method" type="s">
+      <choices>
+        <choice value="oauth"/>
+        <choice value="token"/>
+      </choices>
+      <default>"oauth"</default>
+      <summary>Authentication Method</summary>
+      <description>Authentication method: oauth or token</description>
+    </key>
+
+    <key name="api-token" type="s">
+      <default>""</default>
+      <summary>Linear API Token</summary>
+      <description>Linear Personal API Key for direct authentication</description>
+    </key>
+
+    <!-- OAuth Settings -->
+    <key name="oauth-token" type="s">
+      <default>""</default>
+      <summary>Linear OAuth Access Token</summary>
+      <description>OAuth access token for Linear API access</description>
+    </key>
+
+    <key name="refresh-token" type="s">
+      <default>""</default>
+      <summary>Linear OAuth Refresh Token</summary>
+      <description>OAuth refresh token for token renewal</description>
+    </key>
+
+    <key name="token-expires-at" type="s">
+      <default>""</default>
+      <summary>Token Expiry Time</summary>
+      <description>ISO timestamp when the access token expires</description>
+    </key>
+
+    <key name="oauth-state" type="s">
+      <default>""</default>
+      <summary>OAuth State Parameter</summary>
+      <description>CSRF protection state parameter for OAuth flow</description>
+    </key>
+
+    <key name="oauth-client-id" type="s">
+      <default>""</default>
+      <summary>OAuth Client ID</summary>
+      <description>Linear OAuth application client ID</description>
+    </key>
+
+    <key name="oauth-client-secret" type="s">
+      <default>""</default>
+      <summary>OAuth Client Secret</summary>
+      <description>Linear OAuth application client secret</description>
+    </key>
+
+    <key name="start-oauth-flow" type="b">
+      <default>false</default>
+      <summary>Start OAuth Flow</summary>
+      <description>Trigger to start OAuth authentication flow</description>
+    </key>
+
+    <key name="workspace-id" type="s">
+      <default>""</default>
+      <summary>Linear Workspace ID</summary>
+      <description>ID of the Linear workspace to monitor</description>
+    </key>
+
+    <!-- Polling Settings -->
+    <key name="polling-interval" type="i">
+      <default>60</default>
+      <range min="30" max="300"/>
+      <summary>Polling Interval</summary>
+      <description>How often to check for updates (in seconds)</description>
+    </key>
+
+    <!-- Notification Settings -->
+    <key name="notify-new-issues" type="b">
+      <default>true</default>
+      <summary>Notify for new issues</summary>
+      <description>Show notifications when new issues are created</description>
+    </key>
+
+    <key name="notify-issue-updates" type="b">
+      <default>true</default>
+      <summary>Notify for issue updates</summary>
+      <description>Show notifications when existing issues are updated</description>
+    </key>
+
+    <key name="notify-assigned-issues" type="b">
+      <default>true</default>
+      <summary>Notify for assigned issues</summary>
+      <description>Show notifications when issues are assigned to you</description>
+    </key>
+
+    <key name="notify-comments" type="b">
+      <default>true</default>
+      <summary>Notify for comments</summary>
+      <description>Show notifications when comments are added to issues</description>
+    </key>
+
+    <key name="notify-mentions" type="b">
+      <default>true</default>
+      <summary>Notify for mentions</summary>
+      <description>Show notifications when you are mentioned in issues or comments</description>
+    </key>
+
+    <key name="notify-status-changes" type="b">
+      <default>true</default>
+      <summary>Notify for status changes</summary>
+      <description>Show notifications when issue status changes</description>
+    </key>
+
+    <!-- Click Action Settings -->
+    <key name="click-action" type="s">
+      <choices>
+        <choice value="browser"/>
+        <choice value="custom"/>
+      </choices>
+      <default>"browser"</default>
+      <summary>Click Action</summary>
+      <description>What to do when notification is clicked</description>
+    </key>
+
+    <key name="custom-command" type="s">
+      <default>""</default>
+      <summary>Custom Command</summary>
+      <description>Custom command to run when notification is clicked (use {{URL}} for issue URL)</description>
+    </key>
+
+    <!-- Last Update Tracking -->
+    <key name="last-update-time" type="s">
+      <default>""</default>
+      <summary>Last Update Time</summary>
+      <description>ISO timestamp of last update check</description>
+    </key>
+
+  </schema>
+</schemalist>

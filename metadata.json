@@ -1,0 +1,10 @@
+{
+  "uuid": "linear-notifications@tbj.dev",
+  "name": "Linear GNOME Notifications",
+  "description": "Get native desktop notifications for Linear issues, comments, and updates",
+  "version": 1,
+  "shell-version": ["46"],
+  "url": "https://github.com/nocnokneo/linear-gnome-notifications",
+  "settings-schema": "org.gnome.shell.extensions.linear-notifications",
+  "gettext-domain": "linear-notifications"
+}
