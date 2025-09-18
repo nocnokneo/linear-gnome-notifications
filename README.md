@@ -1,10 +1,10 @@
-# Linear GNOME Notifications - GNOME Shell Extension
+# Linear Desktop Notifications in GNOME
 
 A GNOME Shell extension that provides native desktop notifications for Linear issues, comments, and updates.
 
 ## Features
 
-- **Real-time notifications** for Linear updates via API polling
+- **Near real-time notifications** for Linear updates via API polling
 - **OAuth authentication** with Linear
 - **Native GNOME notifications** with clickable actions
 - **Configurable polling intervals** (30-300 seconds)
@@ -23,22 +23,26 @@ A GNOME Shell extension that provides native desktop notifications for Linear is
 ### From Source
 
 1. Clone this repository:
+
    ```bash
    git clone https://github.com/nocnokneo/linear-gnome-notifications.git
    cd linear-gnome-notifications
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Build and install:
+
    ```bash
    make install
    ```
 
 4. Restart GNOME Shell:
+
    - Press `Alt + F2`, type `r`, and press Enter
    - Or log out and log back in
 
@@ -54,16 +58,19 @@ This extension will be available on [extensions.gnome.org](https://extensions.gn
 ## Configuration
 
 1. Open the extension preferences:
+
    ```bash
    gnome-extensions prefs linear-notifications@tbj.dev
    ```
 
 2. **Authentication Tab**:
+
    - Click "Authenticate" to connect your Linear account
    - Follow the OAuth flow to authorize the extension
    - Alternatively, manually enter your Linear API token
 
 3. **Notifications Tab**:
+
    - Enable/disable notifications for different event types:
      - New issues created
      - Issues assigned to you
@@ -108,57 +115,6 @@ make build
 # Install for testing
 make install
 ```
-
-### Project Structure
-
-```
-linear-gnome-notifications/
-├── extension.js          # Main extension entry point
-├── prefs.js             # Preferences/settings UI
-├── metadata.json        # Extension metadata
-├── linear-client.js     # Linear API integration
-├── notification-manager.js # Notification handling
-├── oauth-handler.js     # OAuth flow management
-├── polling-service.js   # Polling service
-├── schemas/             # GSettings schema
-└── package.json         # Node.js dependencies
-```
-
-### API Usage
-
-The extension uses the Linear TypeScript SDK with the following key operations:
-
-- `client.issues()` - Fetch recent issue updates
-- `client.comments()` - Fetch recent comment updates
-- `client.viewer` - Get current user information
-
-All API calls are authenticated using OAuth tokens stored in GSettings.
-
-## Troubleshooting
-
-### Extension not loading
-- Check GNOME Shell version compatibility (requires 46+)
-- Verify extension is enabled: `gnome-extensions list --enabled`
-- Check logs: `journalctl -f /usr/bin/gnome-shell`
-
-### No notifications appearing
-- Verify Linear OAuth token is configured
-- Check polling interval settings
-- Ensure notification types are enabled
-- Test connection in preferences
-
-### Authentication issues
-- Ensure you have access to the Linear workspace
-- Try revoking and re-authorizing the token
-- Check network connectivity to Linear's API
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test with your GNOME Shell version
-5. Submit a pull request
 
 ## License
 
