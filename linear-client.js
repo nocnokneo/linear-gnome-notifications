@@ -1,4 +1,3 @@
-import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Soup from 'gi://Soup';
 import { Logger } from './logger.js';
@@ -284,6 +283,13 @@ export class LinearAPIClient {
                         actor {
                             displayName
                             avatarUrl
+                            avatarBackgroundColor
+                            initials
+                        }
+                        ... on IssueNotification {
+                            issue {
+                                identifier
+                            }
                         }
                     }
                     pageInfo {
@@ -359,8 +365,8 @@ export class LinearAPIClient {
                 const update = {
                     id: `notification-${notification.id}`,
                     type: this.mapNotificationType(notification.type),
-                    title: notification.title,
-                    body: notification.subtitle || 'No additional details',
+                    title: this.formatNotificationTitle(notification),
+                    body: this.formatNotificationBody(notification),
                     url: notification.url,
                     updatedAt: new Date(notification.createdAt),
                     data: {
@@ -370,16 +376,6 @@ export class LinearAPIClient {
                         issueStatusType: notification.issueStatusType
                     }
                 };
-
-                // Enhance the body with actor information
-                if (notification.actor?.displayName) {
-                    update.body = `${notification.actor.displayName}: ${update.body}`;
-                }
-
-                // Add issue status if available
-                if (notification.issueStatusType) {
-                    update.body = `[${notification.issueStatusType}] ${update.body}`;
-                }
 
                 updates.push(update);
             }
@@ -394,6 +390,53 @@ export class LinearAPIClient {
             this.logger.error('Failed to get notifications:', error.message);
             throw error;
         }
+    }
+
+    /**
+     * Format notification title - use Linear's title with issue identifier for IssueNotifications
+     */
+    formatNotificationTitle(notification) {
+        const title = notification.title || 'Linear Notification';
+
+        // For IssueNotifications, prepend the issue identifier
+        if (notification.issue?.identifier) {
+            return `${notification.issue.identifier} ${title}`;
+        }
+
+        return title;
+    }
+
+    /**
+     * Format notification body - use Linear's subtitle with optional type indicator
+     */
+    formatNotificationBody(notification) {
+        let body = notification.subtitle || '';
+
+        // Add notification type indicator if we can't show badges
+        const typeIcon = this.getNotificationTypeIcon(notification.type);
+        if (typeIcon && body) {
+            body = `${typeIcon} ${body}`;
+        }
+
+        return body || 'New activity in Linear';
+    }
+
+    /**
+     * Get notification type icon for simple prefix indication
+     */
+    getNotificationTypeIcon(notificationType) {
+        const iconMap = {
+            'issueNewComment': '💬',
+            'issueCommentMention': '@',
+            'issueAssigned': '👤',
+            'issueUnassigned': '👤',
+            'issueStatusChanged': '📋',
+            'issueCreated': '➕',
+            'issueAddedToView': '📁',
+            'triageResponsibilityIssueAddedToTriage': '🔍'
+        };
+
+        return iconMap[notificationType] || '';
     }
 
     /**

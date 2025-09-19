@@ -6,7 +6,7 @@ build:
 
 install: build
 	mkdir -p $(EXTENSION_DIR)
-	cp *.js metadata.json $(EXTENSION_DIR)/
+	cp *.js *.svg metadata.json $(EXTENSION_DIR)/
 	cp -r schemas $(EXTENSION_DIR)/
 
 uninstall:
