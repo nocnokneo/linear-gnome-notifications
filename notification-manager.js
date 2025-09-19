@@ -2,7 +2,6 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import GdkPixbuf from 'gi://GdkPixbuf';
 import Soup from 'gi://Soup';
 import { Logger } from './logger.js';
 
@@ -27,6 +26,13 @@ export class LinearNotificationManager {
         Main.messageTray.add(this.source);
     }
 
+    ensureSource() {
+        if (!this.source || (this.source.is_finalized && this.source.is_finalized())) {
+            this.logger.debug('Source disposed or missing, recreating...');
+            this.initializeSource();
+        }
+    }
+
     isDarkTheme() {
         try {
             // Check GNOME's interface color scheme setting
@@ -42,10 +48,7 @@ export class LinearNotificationManager {
     }
 
     showNotification(notification) {
-        if (!this.source) {
-            this.logger.error('Notification source not initialized');
-            return;
-        }
+        this.ensureSource();
 
         if (!this.shouldShowNotification(notification)) {
             return;
