@@ -2,11 +2,13 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import { Logger } from './logger.js';
 
 export class LinearNotificationManager {
     constructor(extension) {
         this.extension = extension;
         this.settings = extension.getSettings();
+        this.logger = new Logger('NotificationManager');
         this.initializeSource();
     }
 
@@ -21,7 +23,7 @@ export class LinearNotificationManager {
 
     showNotification(notification) {
         if (!this.source) {
-            console.error('Notification source not initialized');
+            this.logger.error('Notification source not initialized');
             return;
         }
 
@@ -38,7 +40,7 @@ export class LinearNotificationManager {
 
         // Handle clicking on the notification itself (not just action buttons)
         gnomeNotification.connect('activated', () => {
-            console.log('Linear notification clicked, opening URL:', notification.url);
+            this.logger.debug('Notification clicked, opening URL:', notification.url);
             this.handleNotificationClick(notification.url);
         });
 
@@ -98,7 +100,7 @@ export class LinearNotificationManager {
         try {
             Gio.AppInfo.launch_default_for_uri(url, null);
         } catch (error) {
-            console.error('Failed to open URL in browser:', error);
+            this.logger.error('Failed to open URL in browser:', error);
         }
     }
 
@@ -106,7 +108,7 @@ export class LinearNotificationManager {
         const customCommand = this.settings.get_string('custom-command');
 
         if (!customCommand) {
-            console.error('Custom command not configured');
+            this.logger.error('Custom command not configured');
             return;
         }
 
@@ -115,7 +117,7 @@ export class LinearNotificationManager {
         try {
             GLib.spawn_command_line_async(command);
         } catch (error) {
-            console.error('Failed to run custom command:', error);
+            this.logger.error('Failed to run custom command:', error);
         }
     }
 
@@ -125,10 +127,10 @@ export class LinearNotificationManager {
             const linearClient = this.extension.linearClient;
             if (linearClient) {
                 await linearClient.markNotificationAsRead(notificationId);
-                console.log(`Marked Linear notification ${notificationId} as read`);
+                this.logger.debug(`Marked notification ${notificationId} as read`);
             }
         } catch (error) {
-            console.error('Failed to mark notification as read:', error);
+            this.logger.error('Failed to mark notification as read:', error);
         }
     }
 
@@ -138,10 +140,10 @@ export class LinearNotificationManager {
             const linearClient = this.extension.linearClient;
             if (linearClient) {
                 await linearClient.snoozeNotification(notificationId, snoozedUntilAt);
-                console.log(`Snoozed Linear notification ${notificationId} until ${snoozedUntilAt}`);
+                this.logger.debug(`Snoozed notification ${notificationId} until ${snoozedUntilAt}`);
             }
         } catch (error) {
-            console.error('Failed to snooze notification:', error);
+            this.logger.error('Failed to snooze notification:', error);
         }
     }
 
