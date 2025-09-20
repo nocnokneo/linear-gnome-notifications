@@ -1,6 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Soup from 'gi://Soup';
+import { Logger } from './logger.js';
 
 /**
  * Linear OAuth Handler for GNOME Shell Extension
@@ -11,6 +12,7 @@ export class LinearOAuthHandler {
         this.extension = extension;
         this.settings = extension.getSettings();
         this.httpSession = new Soup.Session();
+        this.logger = new Logger('OAuthHandler');
 
         // OAuth configuration
         this.redirectUri = 'http://localhost:8080/callback';
@@ -22,7 +24,7 @@ export class LinearOAuthHandler {
         this.server = null;
         this.serverPort = 8080;
 
-        console.log('LinearOAuthHandler initialized');
+        this.logger.debug('LinearOAuthHandler initialized');
     }
 
     /**
@@ -197,7 +199,7 @@ export class LinearOAuthHandler {
                             </style>
                         </head>
                         <body>
-                            <div class="success">✅ Authentication Successful!</div>
+                            <div class="success">Authentication Successful!</div>
                             <div class="message">
                                 You have successfully connected your Linear account to GNOME Desktop Notifications.
                                 <br><br>
@@ -319,7 +321,7 @@ export class LinearOAuthHandler {
                             this.settings.set_string('refresh-token', tokenData.refresh_token);
                         }
 
-                        console.log('✅ OAuth token obtained successfully');
+                        console.log('OAuth token obtained successfully');
                         console.log('Token expires at:', expiresAt);
 
                         // Clear state
@@ -412,7 +414,7 @@ export class LinearOAuthHandler {
                             this.settings.set_string('refresh-token', tokenData.refresh_token);
                         }
 
-                        console.log('✅ Access token refreshed successfully');
+                        console.log('Access token refreshed successfully');
                         resolve(tokenData);
                     } catch (error) {
                         console.error('Error processing token refresh response:', error);
@@ -438,7 +440,7 @@ export class LinearOAuthHandler {
         // Stop callback server if running
         this.stopCallbackServer();
 
-        console.log('✅ Logged out successfully');
+        console.log('Logged out successfully');
     }
 
     /**
@@ -449,6 +451,6 @@ export class LinearOAuthHandler {
         if (this.httpSession) {
             this.httpSession = null;
         }
-        console.log('LinearOAuthHandler destroyed');
+        this.logger.debug('LinearOAuthHandler destroyed');
     }
 }

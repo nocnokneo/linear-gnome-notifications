@@ -6,20 +6,20 @@ export class Logger {
 
     debug(message, ...args) {
         if (this.debugEnabled || globalThis.LINEAR_DEBUG) {
-            console.debug(`[${this.component}] ${message}`, ...args);
+            log(`linear-notifications.${this.component}: ${message}`, ...args);
         }
     }
 
     info(message, ...args) {
-        console.info(`[${this.component}] ${message}`, ...args);
+        log(`linear-notifications.${this.component}: ${message}`, ...args);
     }
 
     warn(message, ...args) {
-        console.warn(`[${this.component}] ${message}`, ...args);
+        log(`linear-notifications.${this.component}: WARNING: ${message}`, ...args);
     }
 
     error(message, ...args) {
-        console.error(`[${this.component}] ${message}`, ...args);
+        log(`linear-notifications.${this.component}: ERROR: ${message}`, ...args);
     }
 
     enableDebug() {

@@ -27,8 +27,19 @@ export class LinearNotificationManager {
     }
 
     ensureSource() {
-        if (!this.source || (this.source.is_finalized && this.source.is_finalized())) {
-            this.logger.debug('Source disposed or missing, recreating...');
+        // Always recreate if source is null
+        if (!this.source) {
+            this.logger.debug('Source missing, creating...');
+            this.initializeSource();
+            return;
+        }
+
+        // Test if source is still usable by attempting a safe operation
+        try {
+            // Try to access a property - this will fail if disposed
+            this.source.title;
+        } catch (error) {
+            this.logger.debug('Source disposed, recreating...', error.message);
             this.initializeSource();
         }
     }

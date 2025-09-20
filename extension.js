@@ -4,9 +4,11 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { LinearNotificationManager } from './notification-manager.js';
 import { LinearPollingService } from './polling-service.js';
 import { LinearOAuthHandler } from './oauth-handler.js';
+import { Logger } from './logger.js';
 
 export default class LinearNotificationsExtension extends Extension.Extension {
     enable() {
+        this.logger = new Logger('Extension');
         this.settings = this.getSettings();
 
         // Initialize OAuth handler
@@ -30,19 +32,19 @@ export default class LinearNotificationsExtension extends Extension.Extension {
         // Watch for OAuth success to restart polling
         this.oauthSuccessConnection = this.settings.connect('changed::oauth-token', () => {
             if (this.oauthHandler.isAuthenticated()) {
-                console.log('OAuth authentication completed, restarting polling...');
+                this.logger.info('OAuth authentication completed, restarting polling...');
                 this.pollingService.restart();
             }
         });
 
         // Watch for API token changes to restart polling
         this.apiTokenConnection = this.settings.connect('changed::api-token', () => {
-            console.log('API token changed, checking authentication...');
+            this.logger.info('API token changed, checking authentication...');
             if (this.pollingService.linearClient.isAuthenticated()) {
-                console.log('API token authentication successful, restarting polling...');
+                this.logger.info('API token authentication successful, restarting polling...');
                 this.pollingService.restart();
             } else {
-                console.log('API token authentication failed, stopping polling...');
+                this.logger.warn('API token authentication failed, stopping polling...');
                 this.pollingService.stop();
             }
         });
@@ -50,32 +52,32 @@ export default class LinearNotificationsExtension extends Extension.Extension {
         // Watch for auth method changes
         this.authMethodConnection = this.settings.connect('changed::auth-method', () => {
             const authMethod = this.settings.get_string('auth-method');
-            console.log('Authentication method changed to:', authMethod);
+            this.logger.info('Authentication method changed to:', authMethod);
             this.pollingService.restart();
         });
 
         // Start polling service with enhanced debug logging
-        console.log('Starting Linear Desktop Notifications extension...');
+        this.logger.info('Starting Linear Desktop Notifications extension...');
         const authMethod = this.settings.get_string('auth-method');
-        console.log('Authentication method:', authMethod);
+        this.logger.info('Authentication method:', authMethod);
 
         if (this.pollingService.linearClient.isAuthenticated()) {
-            console.log('✅ Authentication successful - starting polling service');
+            this.logger.info('Authentication successful - starting polling service');
         } else {
-            console.log('❌ Not authenticated - polling service may not work');
+            this.logger.warn('Not authenticated - polling service may not work');
         }
 
         this.pollingService.start();
 
-        console.log('Linear Desktop Notifications extension enabled');
+        this.logger.info('Linear Desktop Notifications extension enabled');
     }
 
     async startOAuthFlow() {
         try {
-            console.log('Starting OAuth flow from extension...');
+            this.logger.info('Starting OAuth flow from extension...');
             await this.oauthHandler.startAuthFlow();
         } catch (error) {
-            console.error('OAuth flow failed:', error);
+            this.logger.error('OAuth flow failed:', error);
             Main.notifyError('Linear Authentication Failed', error.message);
         }
     }
@@ -114,6 +116,6 @@ export default class LinearNotificationsExtension extends Extension.Extension {
 
         this.settings = null;
 
-        console.log('Linear Desktop Notifications extension disabled');
+        this.logger.info('Linear Desktop Notifications extension disabled');
     }
 }
