@@ -18,6 +18,21 @@ export class LinearNotificationManager {
     }
 
     initializeSource() {
+        // Clean up existing source if it exists
+        if (this.source) {
+            try {
+                // Try to remove from message tray if it's still there
+                if (Main.messageTray.remove) {
+                    Main.messageTray.remove(this.source);
+                }
+                if (this.source.destroy) {
+                    this.source.destroy();
+                }
+            } catch (error) {
+                this.logger.debug('Error cleaning up old source:', error.message);
+            }
+        }
+
         this.source = new MessageTray.Source({
             title: 'Linear Notifications',
             iconName: 'applications-internet-symbolic'
@@ -27,19 +42,22 @@ export class LinearNotificationManager {
     }
 
     ensureSource() {
-        // Always recreate if source is null
-        if (!this.source) {
-            this.logger.debug('Source missing, creating...');
+        // Always recreate if source is null or disposed
+        if (!this.source || this.source.is_disposed) {
+            this.logger.debug('Source missing or disposed, creating...');
             this.initializeSource();
             return;
         }
 
         // Test if source is still usable by attempting a safe operation
         try {
-            // Try to access a property - this will fail if disposed
-            this.source.title;
+            // Try to access the source's title property - this will fail if disposed
+            const title = this.source.title;
+            if (title === undefined || title === null) {
+                throw new Error('Source title is null/undefined');
+            }
         } catch (error) {
-            this.logger.debug('Source disposed, recreating...', error.message);
+            this.logger.debug('Source disposed or invalid, recreating...', error.message);
             this.initializeSource();
         }
     }
@@ -65,12 +83,22 @@ export class LinearNotificationManager {
             return;
         }
 
-        const gnomeNotification = new MessageTray.Notification({
+        // Try to get custom avatar icon if available
+        const actorIcon = this.getActorIcon(notification.data?.actor);
+        
+        const notificationParams = {
             source: this.source,
             title: notification.title,
             body: notification.body,
             isTransient: false
-        });
+        };
+
+        // Add icon if available
+        if (actorIcon) {
+            notificationParams.gicon = actorIcon;
+        }
+
+        const gnomeNotification = new MessageTray.Notification(notificationParams);
 
         // Handle clicking on the notification itself (not just action buttons)
         gnomeNotification.connect('activated', () => {
@@ -94,12 +122,6 @@ export class LinearNotificationManager {
                 oneHourLater.setHours(oneHourLater.getHours() + 1);
                 this.snoozeNotification(notification.data.notificationId, oneHourLater.toISOString());
             });
-        }
-
-        // Try to set custom avatar icon if available
-        const actorIcon = this.getActorIcon(notification.data?.actor);
-        if (actorIcon) {
-            gnomeNotification.set_gicon(actorIcon);
         }
 
         this.source.addNotification(gnomeNotification);
@@ -367,7 +389,17 @@ export class LinearNotificationManager {
 
     destroy() {
         if (this.source) {
-            this.source.destroy();
+            try {
+                // Try to remove from message tray if it's still there
+                if (Main.messageTray.remove) {
+                    Main.messageTray.remove(this.source);
+                }
+                if (this.source.destroy) {
+                    this.source.destroy();
+                }
+            } catch (error) {
+                this.logger.debug('Error cleaning up source during destroy:', error.message);
+            }
             this.source = null;
         }
 
