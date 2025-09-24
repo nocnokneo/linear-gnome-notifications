@@ -18,47 +18,58 @@ export class LinearNotificationManager {
     }
 
     initializeSource() {
-        // Clean up existing source if it exists
+        // Always clean up any existing source first
         if (this.source) {
             try {
-                // Try to remove from message tray if it's still there
-                if (Main.messageTray.remove) {
+                // Try to remove from message tray safely
+                if (Main.messageTray.remove && !this.source.is_disposed) {
                     Main.messageTray.remove(this.source);
                 }
-                if (this.source.destroy) {
-                    this.source.destroy();
-                }
             } catch (error) {
-                this.logger.debug('Error cleaning up old source:', error.message);
+                // Ignore errors during cleanup - source might already be disposed
             }
         }
 
+        // Create fresh source
         this.source = new MessageTray.Source({
             title: 'Linear Notifications',
             iconName: 'applications-internet-symbolic'
         });
 
+        // Add to message tray
         Main.messageTray.add(this.source);
+        
+        this.logger.debug('Created new notification source');
     }
 
     ensureSource() {
-        // Always recreate if source is null or disposed
-        if (!this.source || this.source.is_disposed) {
-            this.logger.debug('Source missing or disposed, creating...');
-            this.initializeSource();
-            return;
-        }
+        // Always create a fresh source - don't try to reuse disposed ones
+        this.initializeSource();
+    }
 
-        // Test if source is still usable by attempting a safe operation
-        try {
-            // Try to access the source's title property - this will fail if disposed
-            const title = this.source.title;
-            if (title === undefined || title === null) {
-                throw new Error('Source title is null/undefined');
+    /**
+     * Safely execute an operation on the source, with automatic retry if disposed
+     */
+    executeWithSource(operation, maxRetries = 2) {
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                if (!this.source) {
+                    this.initializeSource();
+                }
+                
+                return operation(this.source);
+            } catch (error) {
+                this.logger.debug(`Source operation failed (attempt ${attempt + 1}/${maxRetries}):`, error.message);
+                
+                // If this was the last attempt, re-throw the error
+                if (attempt === maxRetries - 1) {
+                    throw error;
+                }
+                
+                // Force recreation of source for next attempt
+                this.source = null;
+                this.initializeSource();
             }
-        } catch (error) {
-            this.logger.debug('Source disposed or invalid, recreating...', error.message);
-            this.initializeSource();
         }
     }
 
@@ -77,54 +88,62 @@ export class LinearNotificationManager {
     }
 
     showNotification(notification) {
-        this.ensureSource();
-
         if (!this.shouldShowNotification(notification)) {
             return;
         }
 
-        // Try to get custom avatar icon if available
-        const actorIcon = this.getActorIcon(notification.data?.actor);
-        
-        const notificationParams = {
-            source: this.source,
-            title: notification.title,
-            body: notification.body,
-            isTransient: false
-        };
+        try {
+            // Use defensive source operation
+            this.executeWithSource((source) => {
+                // Try to get custom avatar icon if available
+                const actorIcon = this.getActorIcon(notification.data?.actor);
+                
+                const notificationParams = {
+                    source: source,
+                    title: notification.title,
+                    body: notification.body,
+                    isTransient: false
+                };
 
-        // Add icon if available
-        if (actorIcon) {
-            notificationParams.gicon = actorIcon;
-        }
+                // Add icon if available
+                if (actorIcon) {
+                    notificationParams.gicon = actorIcon;
+                }
 
-        const gnomeNotification = new MessageTray.Notification(notificationParams);
+                const gnomeNotification = new MessageTray.Notification(notificationParams);
 
-        // Handle clicking on the notification itself (not just action buttons)
-        gnomeNotification.connect('activated', () => {
-            this.logger.debug('Notification clicked, opening URL:', notification.url);
-            this.handleNotificationClick(notification.url);
-        });
+                // Handle clicking on the notification itself (not just action buttons)
+                gnomeNotification.connect('activated', () => {
+                    this.logger.debug('Notification clicked, opening URL:', notification.url);
+                    this.handleNotificationClick(notification.url);
+                });
 
-        // Primary action - open in Linear
-        gnomeNotification.addAction('Open', () => {
-            this.handleNotificationClick(notification.url);
-        });
+                // Primary action - open in Linear
+                gnomeNotification.addAction('Open', () => {
+                    this.handleNotificationClick(notification.url);
+                });
 
-        // If this is a Linear notification, add mark as read action
-        if (notification.data?.notificationId) {
-            gnomeNotification.addAction('Mark Read', () => {
-                this.markNotificationAsRead(notification.data.notificationId);
+                // If this is a Linear notification, add mark as read action
+                if (notification.data?.notificationId) {
+                    gnomeNotification.addAction('Mark Read', () => {
+                        this.markNotificationAsRead(notification.data.notificationId);
+                    });
+
+                    gnomeNotification.addAction('Snooze 1h', () => {
+                        const oneHourLater = new Date();
+                        oneHourLater.setHours(oneHourLater.getHours() + 1);
+                        this.snoozeNotification(notification.data.notificationId, oneHourLater.toISOString());
+                    });
+                }
+
+                // This is the critical operation that can fail if source is disposed
+                source.addNotification(gnomeNotification);
             });
-
-            gnomeNotification.addAction('Snooze 1h', () => {
-                const oneHourLater = new Date();
-                oneHourLater.setHours(oneHourLater.getHours() + 1);
-                this.snoozeNotification(notification.data.notificationId, oneHourLater.toISOString());
-            });
+            
+            this.logger.debug('Notification displayed successfully');
+        } catch (error) {
+            this.logger.error('Failed to show notification after retries:', error);
         }
-
-        this.source.addNotification(gnomeNotification);
     }
 
     /**
@@ -390,15 +409,13 @@ export class LinearNotificationManager {
     destroy() {
         if (this.source) {
             try {
-                // Try to remove from message tray if it's still there
-                if (Main.messageTray.remove) {
+                // Try to remove from message tray safely
+                if (Main.messageTray.remove && !this.source.is_disposed) {
                     Main.messageTray.remove(this.source);
                 }
-                if (this.source.destroy) {
-                    this.source.destroy();
-                }
             } catch (error) {
-                this.logger.debug('Error cleaning up source during destroy:', error.message);
+                // Ignore cleanup errors - source might already be disposed
+                this.logger.debug('Error during source cleanup:', error.message);
             }
             this.source = null;
         }

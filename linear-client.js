@@ -306,9 +306,35 @@ export class LinearAPIClient {
     }
 
     /**
-     * Archive notification (Linear's equivalent of marking as read)
+     * Mark notification as read (Linear's equivalent of the checkmark)
      */
     async markNotificationAsRead(notificationId) {
+        const query = `
+            mutation MarkNotificationAsRead($notificationUpdateId: String!, $input: NotificationUpdateInput!) {
+                notificationUpdate(id: $notificationUpdateId, input: $input) {
+                    success
+                    notification {
+                        id
+                        readAt
+                    }
+                }
+            }
+        `;
+
+        const variables = { 
+            notificationUpdateId: notificationId,
+            input: {
+                readAt: new Date().toISOString()
+            }
+        };
+        const data = await this.makeRequest(query, variables);
+        return data.notificationUpdate;
+    }
+
+    /**
+     * Archive notification (delete/remove from inbox)
+     */
+    async archiveNotification(notificationId) {
         const query = `
             mutation ArchiveNotification($id: String!) {
                 notificationArchive(id: $id) {
@@ -320,6 +346,32 @@ export class LinearAPIClient {
         const variables = { id: notificationId };
         const data = await this.makeRequest(query, variables);
         return data.notificationArchive;
+    }
+
+    /**
+     * Snooze notification until specified time
+     */
+    async snoozeNotification(notificationId, snoozedUntilAt) {
+        const query = `
+            mutation SnoozeNotification($notificationUpdateId: String!, $input: NotificationUpdateInput!) {
+                notificationUpdate(id: $notificationUpdateId, input: $input) {
+                    success
+                    notification {
+                        id
+                        snoozedUntilAt
+                    }
+                }
+            }
+        `;
+
+        const variables = { 
+            notificationUpdateId: notificationId,
+            input: {
+                snoozedUntilAt: snoozedUntilAt
+            }
+        };
+        const data = await this.makeRequest(query, variables);
+        return data.notificationUpdate;
     }
 
     /**
